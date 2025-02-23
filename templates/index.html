@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Камера Бишкек</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+        }
+
+        .player-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            margin: 20px 0;
+            background: #f8f8f8;
+            border-radius: 8px;
+        }
+
+        .player-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .radio-container {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .radio-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            width: 100%;
+            max-width: 300px;
+            margin-bottom: 10px;
+        }
+
+        .volume-control {
+            width: 100%;
+            max-width: 300px;
+            margin: 10px 0;
+        }
+
+        .radio-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Прямая трансляция с камеры Бишкек</h1>
+    {% if camera %}
+    <h2>{{ camera.title }}</h2>
+    <div class="status">
+        Статус: {{ camera.status }}
+    </div>
+    <div class="player-container">
+        <iframe
+                src="{{ camera.embed_url }}"
+                frameborder="0"
+                scrolling="no"
+                allow="autoplay; fullscreen"
+                allowfullscreen>
+        </iframe>
+    </div>
+    {% else %}
+    <p>Камера временно недоступна</p>
+    {% endif %}
+
+    <div class="radio-container">
+        <h2>Радио Бишкек</h2>
+        <div class="radio-controls">
+            <select id="radioStation">
+                {% for station in radio_stations %}
+                <option value="{{ station.stream_url }}">
+                    {{ station.name }} ({{ station.frequency }})
+                </option>
+                {% endfor %}
+            </select>
+            <div class="volume-control">
+                <label for="volume">Громкость:</label>
+                <input type="range" id="volume" min="0" max="100" value="50">
+            </div>
+            <div class="radio-buttons">
+    <button id="playButton" onclick="playRadio()">Включить</button>
+    <button id="stopButton" onclick="stopRadio()">Выключить</button>
+</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let audioPlayer = null;
+
+    function playRadio() {
+        const playButton = document.getElementById('playButton');
+        const stopButton = document.getElementById('stopButton');
+
+        if (audioPlayer) {
+            audioPlayer.pause();
+        }
+
+        const stationUrl = document.getElementById('radioStation').value;
+        audioPlayer = new Audio(stationUrl);
+
+        // Устанавливаем громкость
+        audioPlayer.volume = document.getElementById('volume').value / 100;
+
+        // Обработка ошибок
+        audioPlayer.onerror = function () {
+            alert('Ошибка воспроизведения. Попробуйте другую станцию.');
+            stopRadio();
+        };
+
+        // Обработка успешного начала воспроизведения
+        audioPlayer.onplay = function () {
+            playButton.disabled = true;
+            stopButton.disabled = false;
+        };
+
+        // Попытка воспроизведения
+        audioPlayer.play().catch(function (error) {
+            console.error('Ошибка воспроизведения:', error);
+            alert('Не удалось начать воспроизведение. Попробуйте другую станцию.');
+            stopRadio();
+        });
+    }
+
+    function stopRadio() {
+        const playButton = document.getElementById('playButton');
+        const stopButton = document.getElementById('stopButton');
+
+        if (audioPlayer) {
+            audioPlayer.pause();
+            audioPlayer = null;
+        }
+
+        playButton.disabled = false;
+        stopButton.disabled = true;
+    }
+
+    // Обработчик изменения громкости
+    document.getElementById('volume').addEventListener('input', function (e) {
+        if (audioPlayer) {
+            audioPlayer.volume = e.target.value / 100;
+        }
+    });
+
+    // Обработчик изменения станции
+    document.getElementById('radioStation').addEventListener('change', function () {
+        if (audioPlayer && !audioPlayer.paused) {
+            playRadio(); // Переключаем станцию только если радио играет
+        }
+    });
+
+    // Инициализация состояния кнопок
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('stopButton').disabled = true;
+    });
+</script>
+</body>
+</html>
