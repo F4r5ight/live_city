@@ -24,7 +24,6 @@ WEB_CAM_URL = "https://api.windy.com/api/webcams/v3/webcams"
 
 SOUNDS_DIR = Path("static")
 
-
 @app.get("/get_timezone_by_city")
 def get_timezone_by_city(city: str, country: str = "RU"):
     # Инициализируем pgeocode для поиска городов в указанной стране
