@@ -4,7 +4,6 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
-
 def get_weather(city):
     try:
         response = requests.get(f"http://localhost:8000/weather?city={city}")
