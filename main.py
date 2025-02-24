@@ -1,10 +1,8 @@
 import requests
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
 import os
 import random
-import pandas as pd
 from pathlib import Path
 import pgeocode
 from timezonefinder import TimezoneFinder
@@ -33,9 +31,9 @@ def get_timezone_by_city(city: str, country: str = "RU"):
 
     # Проверяем, найдены ли координаты
     if (
-        location.empty
-        or location.latitude.isna().all()
-        or location.longitude.isna().all()
+            location.empty
+            or location.latitude.isna().all()
+            or location.longitude.isna().all()
     ):
         raise HTTPException(status_code=404, detail="Город не найден")
 
@@ -71,7 +69,6 @@ def get_local_time(city: str, country: str = "RU"):
 
 @app.get("/weather")
 def get_weather(city: str):
-
     weather_response = requests.get(
         WEATHER_URL,
         params={"q": city, "appid": WEATHER_API_KEY, "units": "metric", "lang": "ru"},
@@ -175,4 +172,5 @@ async def city_sound(time_of_day: str):
 
     sound_file = random.choice(day_sounds if time_of_day == "day" else night_sounds)
 
-    return {"sound_url": f"/static/{sound_file}"}
+    # Просто возвращаем имя файла без префикса /static/
+    return {"sound_url": sound_file}
