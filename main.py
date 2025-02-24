@@ -1,8 +1,10 @@
 import requests
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 import os
 import random
+import pandas as pd
 from pathlib import Path
 import pgeocode
 from timezonefinder import TimezoneFinder
@@ -11,84 +13,107 @@ import pytz
 
 app = FastAPI()
 
-# Подключаем папку со статическими файлами (звуками)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# API-ключи
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 WEB_CAM_API_KEY = os.getenv("WEB_CAM_API_KEY")
 
-# API-адреса
 WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
 RADIO_URL = "https://de1.api.radio-browser.info/json/stations/byname/"
 WEB_CAM_URL = "https://api.windy.com/api/webcams/v3/webcams"
 
-# Папка со звуками
-SOUNDS_DIR = Path("static/sounds")
+SOUNDS_DIR = Path("static")
 
 
+@app.get("/get_timezone_by_city")
 def get_timezone_by_city(city: str, country: str = "RU"):
-    """
-    Получает временную зону города через координаты.
-    """
+    # Инициализируем pgeocode для поиска городов в указанной стране
     nomi = pgeocode.Nominatim(country)
     location = nomi.query_location(city)
 
-    if location is None or location.latitude is None or location.longitude is None:
-        return None
+    # Проверяем, найдены ли координаты
+    if (
+        location.empty
+        or location.latitude.isna().all()
+        or location.longitude.isna().all()
+    ):
+        raise HTTPException(status_code=404, detail="Город не найден")
 
-    lat, lon = location.latitude, location.longitude
-    tf = TimezoneFinder()
-    timezone = tf.timezone_at(lng=lon, lat=lat)
+    # Берём первые найденные координаты
+    latitude = location.latitude.iloc[0]
+    longitude = location.longitude.iloc[0]
 
-    return timezone
-
-
-def get_local_time(city: str, country: str = "RU"):
-    """
-    Определяет текущее время в городе по его временной зоне.
-    """
-    timezone = get_timezone_by_city(city, country)
+    # Определяем часовой пояс
+    tz_finder = TimezoneFinder()
+    timezone = tz_finder.timezone_at(lng=longitude, lat=latitude)
 
     if not timezone:
-        return None
+        raise HTTPException(status_code=404, detail="Часовой пояс не найден")
 
-    tz = pytz.timezone(timezone)
+    return {"timezone": timezone}
+
+
+@app.get("/get_local_time")
+def get_local_time(city: str, country: str = "RU"):
+    timezone_response = get_timezone_by_city(city, country)
+
+    if "timezone" not in timezone_response:
+        raise HTTPException(status_code=404, detail="Часовой пояс не найден")
+
+    tz = pytz.timezone(timezone_response["timezone"])
     local_time = datetime.now(tz)
 
-    return local_time.hour
+    return {
+        "local_time": local_time.strftime("%Y-%m-%d %H:%M:%S"),
+        "hour": local_time.hour,  # Добавляем "hour" в ответ
+    }
 
 
 @app.get("/weather")
 def get_weather(city: str):
-    """
-    Получает текущую погоду в указанном городе.
-    """
+
     weather_response = requests.get(
         WEATHER_URL,
         params={"q": city, "appid": WEATHER_API_KEY, "units": "metric", "lang": "ru"},
     )
+
     if weather_response.status_code != 200:
-        return {"error": "Город не найден"}
+        raise HTTPException(status_code=404, detail="Город не найден")
 
     weather_data = weather_response.json()
 
-    return {
-        "city": city,
-        "temperature": weather_data["main"]["temp"],
-        "feels_like": weather_data["main"]["feels_like"],
-        "weather": weather_data["weather"][0]["description"],
-        "humidity": weather_data["main"]["humidity"],
-        "wind_speed": weather_data["wind"]["speed"],
-        "pressure": round(weather_data["main"]["pressure"] * 0.75006, 2),
-    }
+    try:
+        main_data = weather_data.get("main", {})
+        if "temp" not in main_data:
+            raise HTTPException(
+                status_code=500, detail="Температура не найдена в данных ответа API"
+            )
+
+        temperature = main_data["temp"]
+        feels_like = main_data["feels_like"]
+        weather = weather_data["weather"][0]["description"]
+        humidity = main_data["humidity"]
+        wind_speed = weather_data["wind"]["speed"]
+        pressure = round(main_data["pressure"] * 0.75006, 2)
+
+        return {
+            "city": city,
+            "temperature": temperature,
+            "feels_like": feels_like,
+            "weather": weather,
+            "humidity": humidity,
+            "wind_speed": wind_speed,
+            "pressure": pressure,
+        }
+
+    except KeyError as e:
+        raise HTTPException(
+            status_code=500, detail=f"Ошибка при получении данных о погоде: {e}"
+        )
 
 
 @app.get("/radio")
 def get_radio(city: str):
-    """
-    Получает ссылку на радио по названию города.
-    """
     radio_response = requests.get(RADIO_URL + city)
     radio_data = radio_response.json()
 
@@ -100,9 +125,6 @@ def get_radio(city: str):
 
 @app.get("/camera")
 def get_camera(city: str):
-    """
-    Получает доступные веб-камеры для указанного города.
-    """
     headers = {"X-WINDY-API-KEY": WEB_CAM_API_KEY}
     params = {"q": city, "show": "webcams:location,player"}
     response = requests.get(WEB_CAM_URL, headers=headers, params=params)
@@ -134,25 +156,23 @@ def get_camera(city: str):
 
 
 @app.get("/city-sound")
-def get_city_sound(city: str):
-    """
-    Выбирает и отдаёт случайный звук города в зависимости от времени суток.
-    """
-    hour = get_local_time(city)
+async def city_sound(time_of_day: str):
+    """Возвращает случайный звуковой файл в зависимости от времени суток"""
+    if time_of_day not in ["day", "night"]:
+        raise HTTPException(status_code=400, detail="Некорректное значение time_of_day")
 
-    if hour is None:
-        return {"error": "Не удалось определить время для указанного города"}
+    day_sounds = [
+        "city_day1.mp3",
+        "city_day2.mp3",
+        "city_day3.mp3",
+        "city_day4.mp3",
+        "city_day5.mp3",
+        "city_day6.mp3",
+        "city_day7.mp3",
+        "city_day8.mp3",
+    ]
+    night_sounds = ["city_night1.mp3", "city_night2.mp3"]
 
-    # Определяем день или ночь
-    if 6 <= hour < 20:
-        sound_files = list(SOUNDS_DIR.glob("city_day*.mp3"))
-    else:
-        sound_files = list(SOUNDS_DIR.glob("city_night*.mp3"))
+    sound_file = random.choice(day_sounds if time_of_day == "day" else night_sounds)
 
-    if not sound_files:
-        raise HTTPException(status_code=404, detail="Нет доступных звуков")
-
-    sound_file = random.choice(sound_files)
-    sound_url = f"/static/sounds/{sound_file.name}"
-
-    return {"city": city, "time": hour, "sound_url": sound_url}
+    return {"sound_url": f"/static/{sound_file}"}
