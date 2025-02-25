@@ -3,3 +3,4 @@ fastapi
 pgeocode
 timezonefinder
 streamlit
+uvicorn
