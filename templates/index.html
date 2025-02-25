@@ -3,219 +3,504 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Камера Бишкек</title>
+    <title>Городская платформа{% if city %} - {{ city }}{% endif %}</title>
     <style>
+        /* Общие стили */
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f4f4f4;
             margin: 0;
-            padding: 20px;
-        }
-
-        .container {
-            margin: 20px auto;
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            max-width: 800px;
-        }
-
-        .player-container {
+            padding: 0;
             position: relative;
-            width: 100%;
-            padding-bottom: 56.25%;
-            height: 0;
             overflow: hidden;
-            margin: 20px 0;
-            background: #f8f8f8;
-            border-radius: 8px;
         }
 
-        .player-container iframe {
+        /* Стили для главной страницы */
+        body.home-page {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Анимированный фон для главной страницы */
+        .city-slideshow-bg {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            border: none;
+            overflow: hidden;
+            z-index: -1;
         }
 
-        .status {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .radio-container {
-            margin-top: 20px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .radio-controls {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-        }
-
-        select {
-            padding: 8px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
+        .city-slideshow {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            max-width: 300px;
+            height: 100%;
+            animation: slide 60s linear infinite;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.6;
+        }
+
+        .city-slideshow:nth-child(1) {
+            background-image: url('https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=1920&auto=format');
+            animation-delay: 0s;
+        }
+
+        .city-slideshow:nth-child(2) {
+            background-image: url('https://images.unsplash.com/photo-1513326738677-b964603b136d?w=1920&auto=format');
+            opacity: 0;
+            animation-delay: 15s;
+        }
+
+        .city-slideshow:nth-child(3) {
+            background-image: url('https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1920&auto=format');
+            opacity: 0;
+            animation-delay: 30s;
+        }
+
+        .city-slideshow:nth-child(4) {
+            background-image: url('https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=1920&auto=format');
+            opacity: 0;
+            animation-delay: 45s;
+        }
+
+        @keyframes slide {
+            0%, 20% {
+                opacity: 1;
+            }
+            25%, 95% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .home-container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 500px;
+            padding: 30px;
+            text-align: center;
+            z-index: 1;
+        }
+
+        .home-container h1 {
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+
+        .home-container p {
+            margin-bottom: 20px;
+            color: #34495e;
+            line-height: 1.5;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .home-container button {
+            background: #2980b9;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 12px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .home-container button:hover {
+            background: #3498db;
+        }
+
+        .city-examples {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+
+        /* Стили для страницы города */
+        body.city-page {
+            background-color: #f4f4f4;
+        }
+
+        /* Фон с веб-камерой города */
+        .webcam-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        .webcam-background iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .webcam-background video {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: cover;
+        }
+
+        .content-container {
+            margin: 60px auto 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(5px);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            position: relative;
+            z-index: 1;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .city-page h1, .city-page h2, .city-page h3 {
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .weather-info {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .toggle-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background: #dc3545;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
             margin-bottom: 10px;
         }
 
-        .volume-control {
-            width: 100%;
-            max-width: 300px;
-            margin: 10px 0;
+        .toggle-button:hover {
+            opacity: 0.9;
         }
 
-        .radio-buttons {
+        .volume-control {
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: white;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Стили для страницы ошибки */
+        body.error-page {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            min-height: 100vh;
             display: flex;
-            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .error-container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 500px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .error-container h1 {
+            color: #c0392b;
+            margin-bottom: 20px;
+        }
+
+        .error-message {
+            padding: 15px;
+            background: #fff3f3;
+            border-radius: 5px;
+            border-left: 4px solid #e74c3c;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .error-button {
+            background: #2980b9;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 12px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-decoration: none;
+            display: inline-block;
             margin-top: 10px;
         }
 
-        button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            background: #007bff;
-            color: white;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background: #0056b3;
-        }
-
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
+        .error-button:hover {
+            background: #3498db;
         }
     </style>
 </head>
-<body>
-<div class="container">
-    <h1>Прямая трансляция с камеры Бишкек</h1>
-    {% if camera %}
-    <h2>{{ camera.title }}</h2>
-    <div class="status">
-        Статус: {{ camera.status }}
+<body class="{% if city %}city-page{% elif error %}error-page{% else %}home-page{% endif %}">
+{% if not city and not error %}
+    <!-- Главная страница -->
+    <div class="city-slideshow-bg">
+        <div class="city-slideshow"></div>
+        <div class="city-slideshow"></div>
+        <div class="city-slideshow"></div>
+        <div class="city-slideshow"></div>
     </div>
-    <div class="player-container">
-        <iframe
-                src="{{ camera.embed_url }}"
-                frameborder="0"
-                scrolling="no"
-                allow="autoplay; fullscreen"
-                allowfullscreen>
-        </iframe>
-    </div>
-    {% else %}
-    <p>Камера временно недоступна</p>
-    {% endif %}
 
-    <div class="radio-container">
-        <h2>Радио Бишкек</h2>
-        <div class="radio-controls">
-            <select id="radioStation">
-                {% for station in radio_stations %}
-                <option value="{{ station.stream_url }}">
-                    {{ station.name }} ({{ station.frequency }})
-                </option>
-                {% endfor %}
-            </select>
-            <div class="volume-control">
-                <label for="volume">Громкость:</label>
-                <input type="range" id="volume" min="0" max="100" value="50">
+    <div class="home-container">
+        <h1>Городская платформа</h1>
+        <p>Введите название города, чтобы получить информацию о погоде, увидеть городской пейзаж и послушать местное
+            радио</p>
+
+        <form action="/city" method="get">
+            <div class="input-group">
+                <input type="text" name="city" placeholder="Введите название города..." required>
             </div>
-            <div class="radio-buttons">
-    <button id="playButton" onclick="playRadio()">Включить</button>
-    <button id="stopButton" onclick="stopRadio()">Выключить</button>
-</div>
+            <button type="submit">Показать город</button>
+        </form>
+
+        <div class="city-examples">
+            Примеры: New-York, Moscow, Paris, London, Berlin, Tokyo
         </div>
     </div>
-</div>
+{% elif city %}
+    <!-- Страница города -->
+    <div class="webcam-background">
+        <!-- Веб-камера через iframe (только живой поток) -->
+        <iframe
+                src="{{ webcam_url }}"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+                frameborder="0">
+        </iframe>
+    </div>
 
-<script>
-    let audioPlayer = null;
+    <div class="content-container">
+        <div class="header">
+            <h1>Городская платформа - {{ city }}</h1>
+            <p>Время суток: {{ "День" if time_of_day == "day" else "Ночь" }}</p>
+        </div>
 
-    function playRadio() {
-        const playButton = document.getElementById('playButton');
-        const stopButton = document.getElementById('stopButton');
+        <div class="grid-container">
+            <!-- Блок с погодой -->
+            <div class="weather-info">
+                <h2>Погода в {{ city }}</h2>
+                <div class="weather-row">
+                    <strong>Температура:</strong> {{ weather.temperature }}°C (ощущается как {{ weather.feels_like }}°C)
+                </div>
+                <div class="weather-row">
+                    <strong>Погодные условия:</strong> {{ weather.weather }}
+                </div>
+                <div class="weather-row">
+                    <strong>Влажность:</strong> {{ weather.humidity }}%
+                </div>
+                <div class="weather-row">
+                    <strong>Скорость ветра:</strong> {{ weather.wind_speed }} м/с
+                </div>
+                <div class="weather-row">
+                    <strong>Давление:</strong> {{ weather.pressure }} мм рт. ст.
+                </div>
+            </div>
 
-        if (audioPlayer) {
-            audioPlayer.pause();
-        }
+            <!-- Блок с радио -->
+            <div class="radio-controls">
+                <h2>Радио {{ city }}</h2>
+                <button id="toggleRadio" class="toggle-button">Выключить</button>
 
-        const stationUrl = document.getElementById('radioStation').value;
-        audioPlayer = new Audio(stationUrl);
+                <div class="volume-control">
+                    <label for="volume">Громкость:</label>
+                    <input type="range" id="volume" min="0" max="100" value="30">
+                </div>
+            </div>
+        </div>
 
-        // Устанавливаем громкость
-        audioPlayer.volume = document.getElementById('volume').value / 100;
+        <a href="/" class="back-link">← Назад на главную</a>
+    </div>
+{% else %}
+    <!-- Страница ошибки -->
+    <div class="error-container">
+        <h1>Произошла ошибка</h1>
 
-        // Обработка ошибок
-        audioPlayer.onerror = function () {
-            alert('Ошибка воспроизведения. Попробуйте другую станцию.');
-            stopRadio();
-        };
+        <p>Не удалось загрузить информацию{% if city %} о городе <strong>{{ city }}</strong>{% endif %}</p>
 
-        // Обработка успешного начала воспроизведения
-        audioPlayer.onplay = function () {
-            playButton.disabled = true;
-            stopButton.disabled = false;
-        };
+        <div class="error-message">
+            <p>{{ error_message }}</p>
+        </div>
 
-        // Попытка воспроизведения
-        audioPlayer.play().catch(function (error) {
-            console.error('Ошибка воспроизведения:', error);
-            alert('Не удалось начать воспроизведение. Попробуйте другую станцию.');
-            stopRadio();
-        });
-    }
+        <a href="/" class="error-button">Вернуться на главную</a>
+    </div>
+{% endif %}
 
-    function stopRadio() {
-        const playButton = document.getElementById('playButton');
-        const stopButton = document.getElementById('stopButton');
+{% if city %}
+    <!-- Скрипты для страницы города -->
+    <script>
+        // Радиоплеер
+        const toggleRadioButton = document.getElementById('toggleRadio');
+        const volumeControl = document.getElementById('volume');
+        let audioPlayer = null;
+        let isPlaying = true;
 
-        if (audioPlayer) {
-            audioPlayer.pause();
-            audioPlayer = null;
-        }
+        {% if radio_url %}
+            const radioUrl = "{{ radio_url }}";
 
-        playButton.disabled = false;
-        stopButton.disabled = true;
-    }
+            // Функция автозапуска радио
+            function startRadio() {
+                if (audioPlayer) {
+                    audioPlayer.pause();
+                }
 
-    // Обработчик изменения громкости
-    document.getElementById('volume').addEventListener('input', function (e) {
-        if (audioPlayer) {
-            audioPlayer.volume = e.target.value / 100;
-        }
-    });
+                audioPlayer = new Audio(radioUrl);
+                audioPlayer.volume = volumeControl.value / 100;
 
-    // Обработчик изменения станции
-    document.getElementById('radioStation').addEventListener('change', function () {
-        if (audioPlayer && !audioPlayer.paused) {
-            playRadio(); // Переключаем станцию только если радио играет
-        }
-    });
+                audioPlayer.onerror = function () {
+                    console.error('Ошибка воспроизведения радио.');
+                    isPlaying = false;
+                    toggleRadioButton.textContent = 'Включить';
+                    toggleRadioButton.style.background = '#007bff';
+                };
 
-    // Инициализация состояния кнопок
-    document.addEventListener('DOMContentLoaded', function () {
-        document.getElementById('stopButton').disabled = true;
-    });
-</script>
+                audioPlayer.play().then(function () {
+                    isPlaying = true;
+                    toggleRadioButton.textContent = 'Выключить';
+                    toggleRadioButton.style.background = '#dc3545';
+                }).catch(function (error) {
+                    console.error('Ошибка воспроизведения:', error);
+                    isPlaying = false;
+                    toggleRadioButton.textContent = 'Включить';
+                    toggleRadioButton.style.background = '#007bff';
+                });
+            }
+
+            toggleRadioButton.addEventListener('click', function () {
+                if (isPlaying) {
+                    // Выключить радио
+                    if (audioPlayer) {
+                        audioPlayer.pause();
+                        audioPlayer = null;
+                    }
+                    isPlaying = false;
+                    toggleRadioButton.textContent = 'Включить';
+                    toggleRadioButton.style.background = '#007bff';
+                } else {
+                    // Включить радио
+                    startRadio();
+                }
+            });
+
+            volumeControl.addEventListener('input', function () {
+                if (audioPlayer) {
+                    audioPlayer.volume = this.value / 100;
+                }
+            });
+
+            // Автозапуск радио при загрузке страницы
+            document.addEventListener('DOMContentLoaded', function () {
+                setTimeout(startRadio, 1000); // Задержка 1 секунда для загрузки страницы
+            });
+
+            // Запускаем радио сразу
+            startRadio();
+        {% else %}
+            toggleRadioButton.disabled = true;
+            toggleRadioButton.textContent = 'Радио недоступно';
+        {% endif %}
+
+        // Автоматическое воспроизведение фоновых звуков (если необходимо)
+        {% if ambient_sounds %}
+            // Массив звуков
+            const ambientSoundUrls = {{ ambient_sounds|safe }};
+            let ambientSoundIndex = 0;
+            let ambientAudio = null;
+
+            function playNextAmbientSound() {
+                if (ambientAudio) {
+                    ambientAudio.pause();
+                }
+
+                if (ambientSoundIndex >= ambientSoundUrls.length) {
+                    ambientSoundIndex = 0;
+                }
+
+                const soundUrl = ambientSoundUrls[ambientSoundIndex];
+                ambientAudio = new Audio(soundUrl);
+                ambientAudio.volume = 0.10;  // Тихий фон
+
+                ambientAudio.onended = function () {
+                    ambientSoundIndex++;
+                    playNextAmbientSound();
+                };
+
+                ambientAudio.play()
+                    .catch(err => {
+                        console.error('Ошибка воспроизведения фона:', err);
+                        ambientSoundIndex++;
+                        setTimeout(playNextAmbientSound, 1000); // Пробуем следующий звук через секунду
+                    });
+            }
+
+            // Запускаем фоновые звуки
+            playNextAmbientSound();
+        {% endif %}
+    </script>
+{% endif %}
 </body>
-</html>
+</html>}
